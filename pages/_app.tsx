@@ -1,7 +1,8 @@
+import "../assets/styles/global.scss";
+import "../components/common/GLSL.scss";
+
 import { AppProps } from "next/app";
 import Head from "next/head";
-
-import "../assets/styles/global.scss";
 
 const App = ({ Component, pageProps }: AppProps) => {
   return (
