@@ -1,7 +1,7 @@
-import { AppProps } from "next/app"
-import Head from "next/head"
+import { AppProps } from "next/app";
+import Head from "next/head";
 
-import "../assets/styles/global.scss"
+import "../assets/styles/global.scss";
 
 const App = ({ Component, pageProps }: AppProps) => {
   return (
@@ -9,9 +9,9 @@ const App = ({ Component, pageProps }: AppProps) => {
       <Head>
         <title>Re:V</title>
       </Head>
-      <Component { ...pageProps } />
+      <Component {...pageProps} />
     </>
-  )
-}
+  );
+};
 
-export default App
+export default App;
