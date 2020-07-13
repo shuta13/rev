@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Scene,
   OrthographicCamera,
@@ -8,93 +8,90 @@ import {
   Mesh,
   Vector2,
   TextureLoader,
-  Clock,
+  Clock
 } from "three";
+
+const vert = require("../../assets/shaders/play/index.vert");
+const frag = require("../../assets/shaders/play/index.frag");
 
 type AnimateParams = {
   scene: Scene;
   camera: OrthographicCamera;
   renderer: WebGLRenderer;
-  _uniforms: any;
+  uniforms: any;
   clock: Clock;
 };
 
-const GLSL: React.FC<{
-  frag: string;
-  vert: string;
-  uniforms?: {
-    u_mouse?: Array<number>;
-    u_texture?: string;
+const GLSL: React.FC = () => {
+  let isNeedsStopAnimate = false;
+  let animationFrameId = 0;
+  const handleResize = (renderer: WebGLRenderer) => {
+    isNeedsStopAnimate = true;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    isNeedsStopAnimate = false;
   };
-}> = ({ frag, vert, uniforms }) => {
   const animate = ({
     scene,
     camera,
     renderer,
-    _uniforms,
-    clock,
+    uniforms,
+    clock
   }: AnimateParams) => {
-    requestAnimationFrame(() =>
-      animate({ scene, camera, renderer, _uniforms, clock })
+    animationFrameId = requestAnimationFrame(() =>
+      animate({ scene, camera, renderer, uniforms, clock })
     );
-    _uniforms.u_time.value = performance.now() * 0.001;
+    if (isNeedsStopAnimate) return;
+    uniforms.time.value += clock.getDelta();
     renderer.render(scene, camera);
   };
+  useEffect(() => {
+    return () => cancelAnimationFrame(animationFrameId);
+  });
   const onCanvasLoaded = (canvas: HTMLCanvasElement) => {
     if (!canvas) return;
     const scene = new Scene();
-    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, -1);
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 1, 1000);
+    camera.position.set(0, 0, 100);
+    camera.lookAt(scene.position);
     scene.add(camera);
     const geometry = new PlaneBufferGeometry(2, 2);
-    const _uniforms = {
-      u_time: {
+    const uniforms = {
+      time: {
         type: "f",
-        value: 0.0,
+        value: 0.0
       },
-      u_resolution: {
+      resolution: {
         type: "v2",
-        value:
-          uniforms !== undefined
-            ? new Vector2(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.innerHeight)
-            : new Vector2(),
-      },
-      u_mouse: {
-        type: "v2",
-        value:
-          uniforms !== undefined && uniforms.u_mouse !== undefined
-            ? new Vector2(uniforms.u_mouse[0], uniforms.u_mouse[1])
-            : new Vector2(),
-      },
-      u_texture: {
-        type: "t",
-        value: new TextureLoader().load(
-          uniforms?.u_texture !== undefined ? uniforms.u_texture : ""
-        ),
-      },
+        value: new Vector2(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio)
+      }
     };
     const material = new RawShaderMaterial({
-      uniforms: _uniforms,
-      vertexShader: vert,
-      fragmentShader: frag,
+      uniforms: uniforms,
+      vertexShader: vert.default,
+      fragmentShader: frag.default
     });
     const mesh = new Mesh(geometry, material);
     scene.add(mesh);
-    const renderer = new WebGLRenderer({ canvas: canvas, antialias: false });
-    renderer.setClearColor("#1d1d1d");
+    const clock = new Clock();
+    clock.start();
+    const renderer = new WebGLRenderer({
+      canvas: canvas,
+      antialias: false,
+      alpha: false,
+      stencil: false,
+      depth: false
+    });
+    renderer.setClearColor(0x1d1d1d);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.render(scene, camera);
-    const clock = new Clock();
-    clock.start();
-    animate({ scene, camera, renderer, _uniforms, clock });
+    window.addEventListener("resize", () => handleResize(renderer));
+    animate({ scene, camera, renderer, uniforms, clock });
   };
-  return (
-    <div className="container">
-      <div className="GLSLWrap">
-        <canvas ref={onCanvasLoaded} />
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    return () => window.removeEventListener("resize", () => handleResize);
+  });
+  return <canvas ref={onCanvasLoaded} className="GLSLWrap" />;
 };
 
 export default GLSL;
