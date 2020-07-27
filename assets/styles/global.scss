@@ -3,9 +3,16 @@ html, body {
   margin: 0;
   width: 100%;
   min-height: 100%;
+  font-size: 8px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+button {
+  outline: none;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}

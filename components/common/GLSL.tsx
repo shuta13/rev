@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Scene,
   OrthographicCamera,
@@ -8,11 +8,12 @@ import {
   Mesh,
   Vector2,
   TextureLoader,
-  Clock
+  Clock,
+  DataTexture
 } from "three";
 
-const vert = require("../../assets/shaders/play/index.vert");
-const frag = require("../../assets/shaders/play/index.frag");
+const vert = require("../../assets/shaders/index.vert");
+const frag = require("../../assets/shaders/index.frag");
 
 type AnimateParams = {
   scene: Scene;
@@ -30,6 +31,29 @@ const GLSL: React.FC = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     isNeedsStopAnimate = false;
   };
+  const handleOnClick = (uniforms: any) => {
+    const ctx = new AudioContext()
+    const analyzer = ctx.createAnalyser()
+    const points = analyzer.frequencyBinCount
+    const audioDataArray = new Uint8Array(points)
+
+    const audio = new Audio()
+    audio.loop = true;
+    audio.autoplay = true;
+    audio.crossOrigin = "anonymous"
+    audio.addEventListener("canplay", () => {
+      const source = ctx.createMediaElementSource(audio)
+      source.connect(analyzer)
+      analyzer.connect(ctx.destination)
+    })
+    audio.src = "/audio/set-me-free.mp3"
+    audio.load()
+
+    // uniforms[audioData] = {
+    //   type: "t",
+    //   value: 
+    // }
+  }
   const animate = ({
     scene,
     camera,
@@ -91,7 +115,12 @@ const GLSL: React.FC = () => {
   useEffect(() => {
     return () => window.removeEventListener("resize", () => handleResize);
   });
-  return <canvas ref={onCanvasLoaded} className="GLSLWrap" />;
+  return (
+    <>
+      <canvas ref={onCanvasLoaded} className="GLSLWrap" />
+      <button onClick={handleOnClick} className="GLSLPlayButton">Play</button>
+    </>
+  );
 };
 
 export default GLSL;
