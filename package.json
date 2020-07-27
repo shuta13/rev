@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "fmt": "prettier --write './{components,pages}/**/*.{ts,tsx}'"
+    "format": "prettier --write './{components,pages}/**/*.{ts,tsx}'"
   },
   "dependencies": {
     "next": "9.4.4",
