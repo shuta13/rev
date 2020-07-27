@@ -9,7 +9,10 @@ import {
   Vector2,
   Clock,
   DataTexture,
-  RGBFormat,
+  RGBAFormat,
+  UnsignedByteType,
+  NearestFilter,
+  TextureLoader,
 } from "three";
 
 const vert = require("../../assets/shaders/index.vert");
@@ -47,19 +50,21 @@ const getSpectrumByFft = ({
 
   const audioTexture = new DataTexture(
     spectrumArray,
-    analyser.fftSize,
-    analyser.fftSize,
-    RGBFormat
+    analyser.frequencyBinCount,
+    analyser.frequencyBinCount,
+    RGBAFormat,
+    UnsignedByteType
   );
+  audioTexture.needsUpdate = true
 
-  uniforms["audioTexture"] = {
-    type: "t",
-    value: audioTexture
-  }
+  uniforms.audioTexture.value = audioTexture
 
-  // uniforms.time.value += performance.now()
+  // uniforms["audioTexture"] = {
+  //   type: "t",
+  //   value: audioTexture
+  // }
 
-  console.log(uniforms)
+  console.log(uniforms.audioTexture)
 
   fftRAFId = requestAnimationFrame(() => {
     getSpectrumByFft({ analyser, spectrumArray, uniforms });
@@ -71,7 +76,7 @@ const handleOnClick = (uniforms) => {
   const analyser = ctx.createAnalyser();
 
   // fft config
-  analyser.fftSize = 2048;
+  analyser.fftSize = 512;
   // array(half of fft size)
   const spectrumArray = new Uint8Array(analyser.frequencyBinCount);
 
@@ -128,6 +133,10 @@ const GLSL: React.FC = () => {
           window.innerHeight * window.devicePixelRatio
         ),
       },
+      audioTexture: {
+        type: "t",
+        value: null
+      }
     };
     const material = new RawShaderMaterial({
       uniforms: uniforms,
