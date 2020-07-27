@@ -9,10 +9,11 @@ import {
   Vector2,
   Clock,
   DataTexture,
-  RGBAFormat,
-  UnsignedByteType,
-  NearestFilter,
-  TextureLoader,
+  Audio,
+  AudioListener,
+  AudioLoader,
+  AudioAnalyser,
+  LuminanceFormat,
 } from "three";
 
 const vert = require("../../assets/shaders/index.vert");
@@ -26,8 +27,7 @@ type AnimateParams = {
   clock: Clock;
 };
 type GetSpectrumByFftParams = {
-  analyser: AnalyserNode;
-  spectrumArray: Uint8Array;
+  analyser: AudioAnalyser;
   uniforms: any;
 };
 
@@ -41,59 +41,38 @@ const handleResize = (renderer: WebGLRenderer) => {
   isNeedsStopAnimate = false;
 };
 
-const getSpectrumByFft = ({
-  analyser,
-  spectrumArray,
-  uniforms
-}: GetSpectrumByFftParams) => {
-  analyser.getByteFrequencyData(spectrumArray);
+const getSpectrumByFft = ({ analyser, uniforms }: GetSpectrumByFftParams) => {
+  analyser.getFrequencyData();
+  uniforms.audioTexture.value.needsUpdate = true;
 
-  const audioTexture = new DataTexture(
-    spectrumArray,
-    analyser.frequencyBinCount,
-    analyser.frequencyBinCount,
-    RGBAFormat,
-    UnsignedByteType
-  );
-  audioTexture.needsUpdate = true
-
-  uniforms.audioTexture.value = audioTexture
-
-  // uniforms["audioTexture"] = {
-  //   type: "t",
-  //   value: audioTexture
-  // }
-
-  console.log(uniforms.audioTexture)
+  console.log(uniforms.audioTexture);
 
   fftRAFId = requestAnimationFrame(() => {
-    getSpectrumByFft({ analyser, spectrumArray, uniforms });
+    getSpectrumByFft({ analyser, uniforms });
   });
 };
 
 const handleOnClick = (uniforms) => {
-  const ctx = new AudioContext();
-  const analyser = ctx.createAnalyser();
+  const fftSize = 512;
+  const listener = new AudioListener();
+  const audio = new Audio(listener);
+  const file = "/audio/set-me-free.mp3";
 
-  // fft config
-  analyser.fftSize = 512;
-  // array(half of fft size)
-  const spectrumArray = new Uint8Array(analyser.frequencyBinCount);
-
-  // play audio
-  const audio = new Audio();
-  audio.loop = true;
-  audio.autoplay = true;
-  audio.crossOrigin = "anonymous";
-  audio.addEventListener("canplay", () => {
-    const source = ctx.createMediaElementSource(audio);
-    source.connect(analyser);
-    analyser.connect(ctx.destination);
-    // exec fft
-    getSpectrumByFft({ analyser, spectrumArray, uniforms });
+  const audioLoader = new AudioLoader();
+  audioLoader.load(file, (buffer) => {
+    audio.setBuffer(buffer);
+    audio.play();
   });
-  audio.src = "/audio/set-me-free.mp3";
-  audio.load();
+
+  const analyser = new AudioAnalyser(audio, fftSize);
+  uniforms.audioTexture.value = new DataTexture(
+    analyser.data,
+    fftSize / 2,
+    1,
+    LuminanceFormat
+  );
+
+  getSpectrumByFft({ analyser, uniforms });
 };
 
 const animate = ({
@@ -135,8 +114,8 @@ const GLSL: React.FC = () => {
       },
       audioTexture: {
         type: "t",
-        value: null
-      }
+        value: null,
+      },
     };
     const material = new RawShaderMaterial({
       uniforms: uniforms,
@@ -163,7 +142,7 @@ const GLSL: React.FC = () => {
   };
   useEffect(() => {
     return () => {
-      window.removeEventListener("resize", () => handleResize)
+      window.removeEventListener("resize", () => handleResize);
       cancelAnimationFrame(RAFId);
       cancelAnimationFrame(fftRAFId);
     };
@@ -171,7 +150,10 @@ const GLSL: React.FC = () => {
   return (
     <>
       <canvas ref={onCanvasLoaded} className="GLSLWrap" />
-      <button onClick={() => handleOnClick(uniforms)} className="GLSLPlayButton">
+      <button
+        onClick={() => handleOnClick(uniforms)}
+        className="GLSLPlayButton"
+      >
         Play
       </button>
     </>

@@ -20,7 +20,7 @@ mat2 rot(float a)
 
 float map(vec3 p) {
   // float i = time;
-  float i = texture2D(audioTexture, vec2(0.3, 0.5)).r;
+  float i = texture2D(audioTexture, vec2(0.3, 0.5)).x;
   
   float d1 = length(p) - 1. * i;
   
@@ -56,7 +56,7 @@ void main() {
   
   float t = 0.;
   for  (int i = 0; i < 40; i++) {
-    t += map(ta + ro * t) * 0.5;
+    t += map(ta + ro * t) * 0.4;
   }
 
   gl_FragColor = vec4(1.0 - burn, 1.0 - burn, 1.0 - burn, 1.0);
