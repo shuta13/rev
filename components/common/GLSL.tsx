@@ -22,37 +22,51 @@ type AnimateParams = {
   uniforms: any;
   clock: Clock;
 };
+type GetSpectrumByFftParams = {
+  analyser: AnalyserNode;
+  spectrumArray: Uint8Array;
+}
 
 const GLSL: React.FC = () => {
   let isNeedsStopAnimate = false;
-  let animationFrameId = 0;
+  let RAFId = 0;
+  let fftRAFId = 0;
   const handleResize = (renderer: WebGLRenderer) => {
     isNeedsStopAnimate = true;
     renderer.setSize(window.innerWidth, window.innerHeight);
     isNeedsStopAnimate = false;
   };
-  const handleOnClick = (uniforms: any) => {
-    const ctx = new AudioContext()
-    const analyzer = ctx.createAnalyser()
-    const points = analyzer.frequencyBinCount
-    const audioDataArray = new Uint8Array(points)
+  const getSpectrumByFft = ({ analyser, spectrumArray }: GetSpectrumByFftParams) => {
+    analyser.getByteFrequencyData(spectrumArray)
+    console.log(spectrumArray)
 
+    fftRAFId = requestAnimationFrame(() => {
+      getSpectrumByFft({ analyser, spectrumArray })
+    })
+  }
+  const handleOnClick = () => {
+    const ctx = new AudioContext()
+    const analyser = ctx.createAnalyser()
+
+    // fft config
+    analyser.fftSize = 256
+    // array(half of fft size)
+    const spectrumArray = new Uint8Array(analyser.frequencyBinCount)
+
+    // play audio
     const audio = new Audio()
     audio.loop = true;
     audio.autoplay = true;
     audio.crossOrigin = "anonymous"
     audio.addEventListener("canplay", () => {
       const source = ctx.createMediaElementSource(audio)
-      source.connect(analyzer)
-      analyzer.connect(ctx.destination)
+      source.connect(analyser)
+      analyser.connect(ctx.destination)
+      // exec fft
+      getSpectrumByFft({ analyser, spectrumArray })
     })
     audio.src = "/audio/set-me-free.mp3"
     audio.load()
-
-    // uniforms[audioData] = {
-    //   type: "t",
-    //   value: 
-    // }
   }
   const animate = ({
     scene,
@@ -61,7 +75,7 @@ const GLSL: React.FC = () => {
     uniforms,
     clock
   }: AnimateParams) => {
-    animationFrameId = requestAnimationFrame(() =>
+    RAFId = requestAnimationFrame(() =>
       animate({ scene, camera, renderer, uniforms, clock })
     );
     if (isNeedsStopAnimate) return;
@@ -69,7 +83,10 @@ const GLSL: React.FC = () => {
     renderer.render(scene, camera);
   };
   useEffect(() => {
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      cancelAnimationFrame(RAFId)
+      cancelAnimationFrame(fftRAFId)
+    }
   });
   const onCanvasLoaded = (canvas: HTMLCanvasElement) => {
     if (!canvas) return;
