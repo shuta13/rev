@@ -1,5 +1,5 @@
 import React from "react";
-import GLSL from "../components/common/GLSL";
+import GLSL from "../components/partials/GLSL";
 
 const Home = () => {
   return (

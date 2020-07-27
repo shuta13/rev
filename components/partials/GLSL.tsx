@@ -15,6 +15,7 @@ import {
   AudioAnalyser,
   LuminanceFormat,
 } from "three";
+import { AppButton } from "../common/AppButton";
 
 const vert = require("../../assets/shaders/index.vert");
 const frag = require("../../assets/shaders/index.frag");
@@ -150,12 +151,10 @@ const GLSL: React.FC = () => {
   return (
     <>
       <canvas ref={onCanvasLoaded} className="GLSLWrap" />
-      <button
-        onClick={() => handleOnClick(uniforms)}
-        className="GLSLPlayButton"
-      >
-        Play
-      </button>
+      <AppButton
+        propOnClick={() => handleOnClick(uniforms)}
+        text="Play"
+      />
     </>
   );
 };
