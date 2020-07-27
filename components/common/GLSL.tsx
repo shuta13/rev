@@ -47,8 +47,8 @@ const getSpectrumByFft = ({
 
   const audioTexture = new DataTexture(
     spectrumArray,
-    analyser.frequencyBinCount,
-    analyser.frequencyBinCount,
+    analyser.fftSize,
+    analyser.fftSize,
     RGBFormat
   );
 
@@ -57,7 +57,9 @@ const getSpectrumByFft = ({
     value: audioTexture
   }
 
-  // console.log(uniforms)
+  // uniforms.time.value += performance.now()
+
+  console.log(uniforms)
 
   fftRAFId = requestAnimationFrame(() => {
     getSpectrumByFft({ analyser, spectrumArray, uniforms });
