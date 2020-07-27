@@ -59,5 +59,5 @@ void main() {
     t += map(ta + ro * t) * 0.4;
   }
 
-  gl_FragColor = vec4(1.0 - burn, 1.0 - burn, 1.0 - burn, 1.0);
+  gl_FragColor = vec4(burn, burn, burn, 1.0);
 }

@@ -1,10 +1,10 @@
 import React from "react";
-import GLSL from "../components/partials/GLSL";
+import Player from "../components/partials/Player";
 
 const Home = () => {
   return (
     <>
-      <GLSL />
+      <Player />
     </>
   );
 };

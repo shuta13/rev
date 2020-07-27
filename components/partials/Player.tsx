@@ -16,6 +16,7 @@ import {
   LuminanceFormat,
 } from "three";
 import { AppButton } from "../common/AppButton";
+import { Controller } from "./Controller";
 
 const vert = require("../../assets/shaders/index.vert");
 const frag = require("../../assets/shaders/index.frag");
@@ -150,11 +151,8 @@ const GLSL: React.FC = () => {
   });
   return (
     <>
-      <canvas ref={onCanvasLoaded} className="GLSLWrap" />
-      <AppButton
-        propOnClick={() => handleOnClick(uniforms)}
-        text="Play"
-      />
+      <canvas ref={onCanvasLoaded} className="PlayerCanvas" />
+      <Controller propOnClick={() => handleOnClick(uniforms)} />
     </>
   );
 };

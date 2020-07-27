@@ -1,6 +1,7 @@
 import "../assets/styles/global.scss";
-import "../components/partials/GLSL.scss";
+import "../components/partials/Player.scss";
 import "../components/common/AppButton.scss";
+import "../components/partials/Controller.scss";
 
 import { AppProps } from "next/app";
 import Head from "next/head";
