@@ -1,5 +1,5 @@
 # Re:V
-![https://re-v.vercel.app/og-image.png]
+![https://re-v.vercel.app/og-image.png]()
 
 > Re:V - Audio Visualizer App
 
