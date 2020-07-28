@@ -36,6 +36,13 @@ type AudioConfig = {
   listener: AudioListener | null;
   audio: Audio | null;
   file: string | null;
+};
+type SceneConfig = {
+  scene: Scene | null;
+  camera: OrthographicCamera | null;
+  renderer: WebGLRenderer | null;
+  uniforms: any | null;
+  clock: Clock | null;
 }
 
 let isNeedsStopAnimate = false;
@@ -45,8 +52,8 @@ const audioConfig: AudioConfig = {
   fftSize: 512,
   listener: null,
   audio: null,
-  file: null
-}
+  file: null,
+};
 
 const handleResize = (renderer: WebGLRenderer) => {
   isNeedsStopAnimate = true;
@@ -64,13 +71,16 @@ const getSpectrumByFft = ({ analyser, uniforms }: GetSpectrumByFftParams) => {
 
 const handleOnClick = (uniforms) => {
   if (audioConfig.audio.isPlaying) {
-    audioConfig.audio.pause()
+    audioConfig.audio.pause();
   } else {
     const audioLoader = new AudioLoader();
     audioLoader.load(audioConfig.file, (buffer) => {
       audioConfig.audio.setBuffer(buffer);
       audioConfig.audio.play();
-      const analyser = new AudioAnalyser(audioConfig.audio, audioConfig.fftSize);
+      const analyser = new AudioAnalyser(
+        audioConfig.audio,
+        audioConfig.fftSize
+      );
       uniforms.audioTexture.value = new DataTexture(
         analyser.data,
         audioConfig.fftSize / 2,
@@ -82,36 +92,40 @@ const handleOnClick = (uniforms) => {
   }
 
   if (fftRAFId !== 0) {
-    cancelAnimationFrame(fftRAFId)
+    cancelAnimationFrame(fftRAFId);
   }
 };
 
-const animate = ({
-  scene,
-  camera,
-  renderer,
-  uniforms,
-  clock,
-}: AnimateParams) => {
-  RAFId = requestAnimationFrame(() =>
-    animate({ scene, camera, renderer, uniforms, clock })
-  );
-  if (isNeedsStopAnimate) return;
-  uniforms.time.value += clock.getDelta();
-  renderer.render(scene, camera);
-};
-
 const GLSL: React.FC = () => {
-  let uniforms;
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const [file, setFile] = useState(null);
+
+  const sceneConfig: SceneConfig = {
+    scene: null,
+    camera: null,
+    renderer: null,
+    uniforms: null,
+    clock: null
+  }
+
+  const animate = () => {
+    RAFId = requestAnimationFrame(() =>
+      animate()
+    );
+    if (isNeedsStopAnimate) return;
+    sceneConfig.uniforms.time.value += sceneConfig.clock.getDelta();
+    sceneConfig.renderer.render(sceneConfig.scene, sceneConfig.camera);
+  };
+
   const onCanvasLoaded = (canvas: HTMLCanvasElement) => {
     if (!canvas) return;
-    const scene = new Scene();
-    const camera = new OrthographicCamera(-1, 1, 1, -1, 1, 1000);
-    camera.position.set(0, 0, 100);
-    camera.lookAt(scene.position);
-    scene.add(camera);
+    sceneConfig.scene = new Scene();
+    sceneConfig.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 1000);
+    sceneConfig.camera.position.set(0, 0, 100);
+    sceneConfig.camera.lookAt(sceneConfig.scene.position);
+    sceneConfig.scene.add(sceneConfig.camera);
     const geometry = new PlaneBufferGeometry(2, 2);
-    uniforms = {
+    sceneConfig.uniforms = {
       time: {
         type: "f",
         value: 0.0,
@@ -129,35 +143,39 @@ const GLSL: React.FC = () => {
       },
     };
     const material = new RawShaderMaterial({
-      uniforms: uniforms,
+      uniforms: sceneConfig.uniforms,
       vertexShader: vert.default,
       fragmentShader: frag.default,
     });
     const mesh = new Mesh(geometry, material);
-    scene.add(mesh);
-    const clock = new Clock();
-    clock.start();
-    const renderer = new WebGLRenderer({
+    sceneConfig.scene.add(mesh);
+    sceneConfig.clock = new Clock();
+    sceneConfig.clock.start();
+    sceneConfig.renderer = new WebGLRenderer({
       canvas: canvas,
       antialias: false,
       alpha: false,
       stencil: false,
       depth: false,
     });
-    renderer.setClearColor(0x1d1d1d);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.render(scene, camera);
-    window.addEventListener("resize", () => handleResize(renderer));
+    sceneConfig.renderer.setClearColor(0xffffff);
+    sceneConfig.renderer.setPixelRatio(window.devicePixelRatio);
+    sceneConfig.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    window.addEventListener("resize", () => handleResize(sceneConfig.renderer));
 
     // audio init
     audioConfig.fftSize = 512;
     audioConfig.listener = new AudioListener();
     audioConfig.audio = new Audio(audioConfig.listener);
-    audioConfig.file = "/audio/set-me-free.mp3"
-
-    animate({ scene, camera, renderer, uniforms, clock });
+    audioConfig.file = "/audio/set-me-free.mp3";
   };
+  useEffect(() => {
+    if (file !== null) {
+      sceneConfig.renderer.render(sceneConfig.scene, sceneConfig.camera);
+      animate();
+    }
+  }, [file])
   useEffect(() => {
     return () => {
       window.removeEventListener("resize", () => handleResize);
@@ -168,7 +186,11 @@ const GLSL: React.FC = () => {
   return (
     <>
       <canvas ref={onCanvasLoaded} className="PlayerCanvas" />
-      <Controller propOnClick={() => handleOnClick(uniforms)} />
+      <Controller
+        propOnClick={() => handleOnClick(sceneConfig.uniforms)}
+        fileInput={fileInput}
+        setFile={setFile}
+      />
     </>
   );
 };
