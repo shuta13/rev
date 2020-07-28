@@ -2,7 +2,8 @@
   position: fixed;
   bottom: 0;
   right: 0;
-  width: 480px;
+  width: 100%;
+  max-width: 480px;
   height: 320;
   padding: 32px;
   display: flex;
