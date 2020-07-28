@@ -16,18 +16,10 @@ import {
   LuminanceFormat,
 } from "three";
 import { Controller } from "./Controller";
-import { read } from "fs/promises";
 
 const vert = require("../../assets/shaders/index.vert");
 const frag = require("../../assets/shaders/index.frag");
 
-type AnimateParams = {
-  scene: Scene;
-  camera: OrthographicCamera;
-  renderer: WebGLRenderer;
-  uniforms: any;
-  clock: Clock;
-};
 type GetSpectrumByFftParams = {
   analyser: AudioAnalyser;
   uniforms: any;

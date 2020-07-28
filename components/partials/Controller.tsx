@@ -16,7 +16,7 @@ export const Controller: React.FC<{
   return (
     <div className="Controller">
       <div className="ControllerNP">
-        { file !== null ? fileInput.current.files[0].name.split(".")[0] : "None" }
+        { file !== null ? fileInput.current.files[0].name : "None" }
       </div>
       <label className="ControllerFileInput">
         File
