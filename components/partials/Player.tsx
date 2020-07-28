@@ -16,6 +16,7 @@ import {
   LuminanceFormat,
 } from "three";
 import { Controller } from "./Controller";
+import { read } from "fs/promises";
 
 const vert = require("../../assets/shaders/index.vert");
 const frag = require("../../assets/shaders/index.frag");
@@ -69,7 +70,9 @@ const getSpectrumByFft = ({ analyser, uniforms }: GetSpectrumByFftParams) => {
   });
 };
 
-const handleOnClick = (uniforms) => {
+const handleOnClick = (uniforms, file) => {
+  if (file === null) return
+
   if (audioConfig.audio.isPlaying) {
     audioConfig.audio.pause();
   } else {
@@ -96,9 +99,23 @@ const handleOnClick = (uniforms) => {
   }
 };
 
+const convertFile = async (file) => {
+  const reader = new FileReader()
+
+  const load = new Promise((resolve) => {
+    reader.onload = (e) => {
+      resolve(e.target.result)
+    }
+  })
+
+  reader.readAsDataURL(file)
+
+  return load;
+}
+
 const GLSL: React.FC = () => {
   const fileInput = useRef<HTMLInputElement | null>(null);
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<React.MutableRefObject<HTMLInputElement> | null>(null);
 
   const sceneConfig: SceneConfig = {
     scene: null,
@@ -168,10 +185,16 @@ const GLSL: React.FC = () => {
     audioConfig.fftSize = 512;
     audioConfig.listener = new AudioListener();
     audioConfig.audio = new Audio(audioConfig.listener);
-    audioConfig.file = "/audio/set-me-free.mp3";
   };
   useEffect(() => {
     if (file !== null) {
+      convertFile(file)
+        .then((r) => {
+          audioConfig.file = r as string
+        })
+        .catch((e) => {
+          throw e
+        })
       sceneConfig.renderer.render(sceneConfig.scene, sceneConfig.camera);
       animate();
     }
@@ -187,8 +210,9 @@ const GLSL: React.FC = () => {
     <>
       <canvas ref={onCanvasLoaded} className="PlayerCanvas" />
       <Controller
-        propOnClick={() => handleOnClick(sceneConfig.uniforms)}
+        propOnClick={() => handleOnClick(sceneConfig.uniforms, file)}
         fileInput={fileInput}
+        file={file}
         setFile={setFile}
       />
     </>

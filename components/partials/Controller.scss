@@ -1,11 +1,48 @@
 .Controller {
   position: fixed;
-  top: 0;
+  bottom: 0;
   right: 0;
   width: 480px;
-  height: 100%;
+  height: 320;
   padding: 32px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-content: flex-start;
   background: #1d1d1d40;
+}
+
+.ControllerNP {
+  font-size: 2.5rem;
+  font-family: "Abel", sans-serif;
+  letter-spacing: 1px;
+  color: #1d1d1d;
+  width: 100%;
+  height: 48px;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.ControllerFileInput {
+  background: #ffffff;
+  // width: 148px;
+  min-width: 148px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-family: "Abel", sans-serif;
+  letter-spacing: 1px;
+  border-radius: 8px;
+  color: #1d1d1d;
+
+  > input[type="file"] {
+    display: none;
+  }
 }
