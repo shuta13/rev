@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { AppButton } from "../common/AppButton";
 
 export const Controller: React.FC<{
-  handleOnClick: () => void;
+  handleOnClickButton: () => void;
   text?: string;
   file: File | null;
   setFile: (file: File | null) => void;
-}> = ({ handleOnClick, text, file, setFile }) => {
+  setIsChanging: (prevState: boolean) => void;
+}> = ({ handleOnClickButton, text, file, setFile, setIsChanging }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playButtonText, setPlayButtonText] = useState("Play");
 
@@ -22,10 +23,13 @@ export const Controller: React.FC<{
   return (
     <div className="Controller">
       <div className="ControllerNP">{file !== null ? file.name : "None"}</div>
-      <ControllerFileInput handleOnChangeInput={handleOnChangeInput} />
+      <ControllerFileInput
+        handleOnChangeInput={handleOnChangeInput}
+        setIsChanging={setIsChanging}
+      />
       <AppButton
         handleOnClick={() => {
-          handleOnClick();
+          handleOnClickButton();
           !text && file !== null && setIsPlaying(!isPlaying);
         }}
         text={text !== undefined ? text : playButtonText}
@@ -36,11 +40,17 @@ export const Controller: React.FC<{
 
 const ControllerFileInput: React.FC<{
   handleOnChangeInput: (e: React.FormEvent<HTMLInputElement>) => void;
-}> = ({ handleOnChangeInput }) => {
+  setIsChanging: (prevState: boolean) => void;
+}> = ({ handleOnChangeInput, setIsChanging }) => {
   return (
     <label className="ControllerFileInput">
       File
-      <input type="file" accept="audio/*" onChange={handleOnChangeInput} />
+      <input
+        type="file"
+        accept="audio/*"
+        onChange={handleOnChangeInput}
+        onClick={(prevState) => setIsChanging(!prevState)}
+      />
     </label>
   );
 };

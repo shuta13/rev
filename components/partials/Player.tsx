@@ -26,7 +26,7 @@ interface GetSpectrumByFftParams {
   uniforms: any;
 }
 
-interface Config {
+export interface Config {
   isNeedsStopAnimate: boolean;
   RAFId: number;
   fftRAFId: number;
@@ -61,6 +61,7 @@ const GLSL: React.FC = () => {
   const [fftSize] = useState(512);
   const [audioFile, setAudioFile] = useState<string | ArrayBuffer | null>(null);
   const [isExistAudioFile, setIsExistAudioFile] = useState(false);
+  const [isChanging, setIsChanging] = useState(false);
 
   // for controller (input file)
   const [file, setFile] = useState<File | null>(null);
@@ -245,7 +246,12 @@ const GLSL: React.FC = () => {
   return (
     <>
       <canvas ref={onCanvasLoaded} className="PlayerCanvas" />
-      <Controller handleOnClick={handleOnClick} file={file} setFile={setFile} />
+      <Controller
+        handleOnClickButton={handleOnClick}
+        file={file}
+        setFile={setFile}
+        setIsChanging={() => setIsChanging(!isChanging)}
+      />
     </>
   );
 };
