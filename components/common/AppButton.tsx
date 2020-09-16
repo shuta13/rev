@@ -1,11 +1,11 @@
 import React from "react";
 
 export const AppButton: React.FC<{
-  propOnClick?: () => void;
+  handleOnClick?: () => void;
   text: string;
-}> = ({ propOnClick, text }) => {
+}> = ({ handleOnClick, text }) => {
   return (
-    <button onClick={propOnClick} className="AppButton">
+    <button onClick={handleOnClick} className="AppButton">
       {text}
     </button>
   );

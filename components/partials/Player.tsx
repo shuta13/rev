@@ -1,3 +1,4 @@
+import { resolve } from "path";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Scene,
@@ -20,177 +21,158 @@ import { Controller } from "./Controller";
 const vert = require("../../assets/shaders/index.vert");
 const frag = require("../../assets/shaders/index.frag");
 
-type GetSpectrumByFftParams = {
+interface GetSpectrumByFftParams {
   analyser: AudioAnalyser;
   uniforms: any;
-};
-type AudioConfig = {
-  fftSize: number;
-  listener: AudioListener | null;
-  audio: Audio | null;
-  file: string | null;
-};
-type SceneConfig = {
-  scene: Scene | null;
-  camera: OrthographicCamera | null;
-  renderer: WebGLRenderer | null;
-  uniforms: any | null;
-  clock: Clock | null;
-}
-
-let isNeedsStopAnimate = false;
-let RAFId = 0;
-let fftRAFId = 0;
-const audioConfig: AudioConfig = {
-  fftSize: 512,
-  listener: null,
-  audio: null,
-  file: null,
-};
-
-const handleResize = (renderer: WebGLRenderer) => {
-  isNeedsStopAnimate = true;
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  isNeedsStopAnimate = false;
-};
-
-const getSpectrumByFft = ({ analyser, uniforms }: GetSpectrumByFftParams) => {
-  analyser.getFrequencyData();
-  uniforms.audioTexture.value.needsUpdate = true;
-  fftRAFId = requestAnimationFrame(() => {
-    getSpectrumByFft({ analyser, uniforms });
-  });
-};
-
-const handleOnClick = (uniforms, file) => {
-  if (file === null) return
-
-  if (audioConfig.audio.isPlaying) {
-    audioConfig.audio.pause();
-  } else {
-    const audioLoader = new AudioLoader();
-    audioLoader.load(audioConfig.file, (buffer) => {
-      audioConfig.audio.setBuffer(buffer);
-      audioConfig.audio.play();
-      const analyser = new AudioAnalyser(
-        audioConfig.audio,
-        audioConfig.fftSize
-      );
-      uniforms.audioTexture.value = new DataTexture(
-        analyser.data,
-        audioConfig.fftSize / 2,
-        1,
-        LuminanceFormat
-      );
-      getSpectrumByFft({ analyser, uniforms });
-    });
-  }
-
-  if (fftRAFId !== 0) {
-    cancelAnimationFrame(fftRAFId);
-  }
-};
-
-const convertFile = async (file) => {
-  const reader = new FileReader()
-
-  const load = new Promise((resolve) => {
-    reader.onload = (e) => {
-      resolve(e.target.result)
-    }
-  })
-
-  reader.readAsDataURL(file)
-
-  return load;
 }
 
 const GLSL: React.FC = () => {
-  const fileInput = useRef<HTMLInputElement | null>(null);
-  const [file, setFile] = useState<React.MutableRefObject<HTMLInputElement> | null>(null);
+  // animation
+  const [isNeedsStopAnimate, setIsNeedsStopAnimate] = useState(false);
+  const [RAFId, setRAFId] = useState(0);
+  const [fftRAFId, setFftRAFId] = useState(0);
 
-  const sceneConfig: SceneConfig = {
-    scene: null,
-    camera: null,
-    renderer: null,
-    uniforms: null,
-    clock: null
-  }
+  // audio
+  const [audio, setAudio] = useState<Audio | null>(null);
+  const [fftSize] = useState(512);
+  const [audioFile, setAudioFile] = useState<string | ArrayBuffer | null>(null);
+  const [isExistAudioFile, setIsExistAudioFile] = useState(false);
 
-  const animate = () => {
-    RAFId = requestAnimationFrame(() =>
-      animate()
+  // for controller (input file)
+  const [file, setFile] = useState<File | null>(null);
+
+  // three config
+  const [scene, setScene] = useState<Scene | null>(null);
+  const [camera, setCamera] = useState<OrthographicCamera | null>(null);
+  const [renderer, setRenderer] = useState<WebGLRenderer | null>(null);
+  const [clock, setClock] = useState<Clock | null>(null);
+
+  const canvas = useRef<HTMLCanvasElement>(null);
+
+  const uniforms = {
+    time: {
+      type: "f",
+      value: 0.0,
+    },
+    resolution: {
+      type: "v2",
+      value: new Vector2(),
+    },
+    audioTexture: {
+      type: "t",
+      value: null as DataTexture | null,
+    },
+  };
+
+  const handleResize = () => {
+    setIsNeedsStopAnimate(true);
+    renderer?.setSize(window.innerWidth, window.innerHeight);
+    setIsNeedsStopAnimate(false);
+  };
+
+  const getSpectrumByFft = ({ analyser, uniforms }: GetSpectrumByFftParams) => {
+    analyser.getFrequencyData();
+    uniforms.audioTexture.value.needsUpdate = true;
+    setFftRAFId(
+      requestAnimationFrame(() => {
+        getSpectrumByFft({ analyser, uniforms });
+      })
     );
-    if (isNeedsStopAnimate) return;
-    sceneConfig.uniforms.time.value += sceneConfig.clock.getDelta();
-    sceneConfig.renderer.render(sceneConfig.scene, sceneConfig.camera);
   };
 
-  const onCanvasLoaded = (canvas: HTMLCanvasElement) => {
-    if (!canvas) return;
-    sceneConfig.scene = new Scene();
-    sceneConfig.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 1000);
-    sceneConfig.camera.position.set(0, 0, 100);
-    sceneConfig.camera.lookAt(sceneConfig.scene.position);
-    sceneConfig.scene.add(sceneConfig.camera);
-    const geometry = new PlaneBufferGeometry(2, 2);
-    sceneConfig.uniforms = {
-      time: {
-        type: "f",
-        value: 0.0,
-      },
-      resolution: {
-        type: "v2",
-        value: new Vector2(
-          window.innerWidth * window.devicePixelRatio,
-          window.innerHeight * window.devicePixelRatio
-        ),
-      },
-      audioTexture: {
-        type: "t",
-        value: null,
-      },
-    };
-    const material = new RawShaderMaterial({
-      uniforms: sceneConfig.uniforms,
-      vertexShader: vert.default,
-      fragmentShader: frag.default,
-    });
-    const mesh = new Mesh(geometry, material);
-    sceneConfig.scene.add(mesh);
-    sceneConfig.clock = new Clock();
-    sceneConfig.clock.start();
-    sceneConfig.renderer = new WebGLRenderer({
-      canvas: canvas,
-      antialias: false,
-      alpha: false,
-      stencil: false,
-      depth: false,
-    });
-    sceneConfig.renderer.setClearColor(0xffffff);
-    sceneConfig.renderer.setPixelRatio(window.devicePixelRatio);
-    sceneConfig.renderer.setSize(window.innerWidth, window.innerHeight);
-
-    window.addEventListener("resize", () => handleResize(sceneConfig.renderer));
-
-    // audio init
-    audioConfig.fftSize = 512;
-    audioConfig.listener = new AudioListener();
-    audioConfig.audio = new Audio(audioConfig.listener);
-  };
-  useEffect(() => {
-    if (file !== null) {
-      convertFile(file)
-        .then((r) => {
-          audioConfig.file = r as string
-        })
-        .catch((e) => {
-          throw e
-        })
-      sceneConfig.renderer.render(sceneConfig.scene, sceneConfig.camera);
-      animate();
+  const handleOnClick = () => {
+    if (audio?.isPlaying) {
+      audio.pause();
+    } else {
+      const audioLoader = new AudioLoader();
+      if (audioFile !== null) {
+        audioLoader.load(audioFile as string, (buffer) => {
+          if (audio !== null) {
+            audio.setBuffer(buffer);
+            console.log(audio);
+            audio.play();
+            const analyser = new AudioAnalyser(audio, fftSize);
+            uniforms.audioTexture.value = new DataTexture(
+              analyser.data,
+              fftSize / 2,
+              1,
+              LuminanceFormat
+            );
+            getSpectrumByFft({ analyser, uniforms });
+          }
+        });
+      }
     }
-  }, [file])
+
+    if (fftRAFId !== 0) {
+      cancelAnimationFrame(fftRAFId);
+    }
+  };
+
+  const convertFile = () => {
+    const reader = new FileReader();
+
+    const load = new Promise(
+      (
+        resolve: (e: string | ArrayBuffer | null | undefined) => void,
+        reject
+      ) => {
+        try {
+          reader.onload = (e) => {
+            file !== null && resolve(e.target?.result);
+          };
+        } catch (e) {
+          reject(e);
+        }
+      }
+    );
+
+    file !== null && reader.readAsDataURL(file);
+
+    return load;
+  };
+
+  useEffect(() => {
+    // three init
+    setScene(new Scene());
+    setCamera(new OrthographicCamera(-1, 1, 1, -1, 1, 1000));
+
+    uniforms.resolution.value = new Vector2(
+      window.innerWidth * window.devicePixelRatio,
+      window.innerHeight * window.devicePixelRatio
+    );
+
+    setClock(new Clock());
+    if (canvas.current != null) {
+      const renderer = new WebGLRenderer({
+        canvas: canvas.current,
+        antialias: false,
+        alpha: false,
+        stencil: false,
+        depth: false,
+      });
+      setRenderer(renderer);
+      onCanvasLoaded();
+    }
+  }, []);
+
+  useEffect(() => {
+    file !== null &&
+      convertFile().then((result) => {
+        setAudioFile(result);
+      });
+  }, [file]);
+
+  useEffect(() => {
+    setIsExistAudioFile(audioFile !== null);
+  }, [audioFile]);
+
+  useEffect(() => {
+    if (scene !== null && camera !== null && isExistAudioFile)
+      renderer?.render(scene, camera);
+    animate();
+  }, [isExistAudioFile]);
+
   useEffect(() => {
     return () => {
       window.removeEventListener("resize", () => handleResize);
@@ -198,15 +180,47 @@ const GLSL: React.FC = () => {
       cancelAnimationFrame(fftRAFId);
     };
   });
+
+  const onCanvasLoaded = () => {
+    if (!canvas.current) return;
+
+    camera?.position.set(0, 0, 100);
+    scene?.position !== undefined && camera?.lookAt(scene?.position);
+    camera !== null && scene?.add(camera);
+
+    const geometry = new PlaneBufferGeometry(2, 2);
+
+    const material = new RawShaderMaterial({
+      uniforms: uniforms,
+      vertexShader: vert.default,
+      fragmentShader: frag.default,
+    });
+
+    const mesh = new Mesh(geometry, material);
+    scene?.add(mesh);
+
+    clock?.start();
+
+    renderer?.setClearColor(0xffffff);
+    renderer?.setPixelRatio(window.devicePixelRatio);
+    renderer?.setSize(window.innerWidth, window.innerHeight);
+
+    renderer !== null && window.addEventListener("resize", handleResize);
+
+    setAudio(new Audio(new AudioListener()));
+  };
+
+  const animate = () => {
+    setRAFId(requestAnimationFrame(() => animate()));
+    if (isNeedsStopAnimate) return;
+    uniforms.time.value += clock?.getDelta()!!;
+    if (scene !== null && camera !== null) renderer?.render(scene, camera);
+  };
+
   return (
     <>
-      <canvas ref={onCanvasLoaded} className="PlayerCanvas" />
-      <Controller
-        propOnClick={() => handleOnClick(sceneConfig.uniforms, file)}
-        fileInput={fileInput}
-        file={file}
-        setFile={setFile}
-      />
+      <canvas ref={canvas} className="PlayerCanvas" />
+      <Controller handleOnClick={handleOnClick} file={file} setFile={setFile} />
     </>
   );
 };
