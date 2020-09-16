@@ -26,14 +26,38 @@ interface GetSpectrumByFftParams {
   uniforms: any;
 }
 
+interface Config {
+  isNeedsStopAnimate: boolean;
+  RAFId: number;
+  fftRAFId: number;
+  scene: Scene | null;
+  camera: OrthographicCamera | null;
+  renderer: WebGLRenderer | null;
+  uniforms: {
+    time: {
+      type: "f";
+      value: number;
+    };
+    resolution: {
+      type: "v2";
+      value: Vector2;
+    };
+    audioTexture: {
+      type: "t";
+      value: DataTexture | null;
+    };
+  };
+  clock: Clock | null;
+  audio: Audio | null;
+}
+
 const GLSL: React.FC = () => {
   // animation
-  const [isNeedsStopAnimate, setIsNeedsStopAnimate] = useState(false);
-  const [RAFId, setRAFId] = useState(0);
-  const [fftRAFId, setFftRAFId] = useState(0);
+  // const [isNeedsStopAnimate, setIsNeedsStopAnimate] = useState(false);
+  // const [RAFId, setRAFId] = useState(0);
+  // const [fftRAFId, setFftRAFId] = useState(0);
 
   // audio
-  const [audio, setAudio] = useState<Audio | null>(null);
   const [fftSize] = useState(512);
   const [audioFile, setAudioFile] = useState<string | ArrayBuffer | null>(null);
   const [isExistAudioFile, setIsExistAudioFile] = useState(false);
@@ -42,70 +66,78 @@ const GLSL: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
 
   // three config
-  const [scene, setScene] = useState<Scene | null>(null);
-  const [camera, setCamera] = useState<OrthographicCamera | null>(null);
-  const [renderer, setRenderer] = useState<WebGLRenderer | null>(null);
-  const [clock, setClock] = useState<Clock | null>(null);
+  // const [scene, setScene] = useState<Scene | null>(null);
+  // const [camera, setCamera] = useState<OrthographicCamera | null>(null);
+  // const [renderer, setRenderer] = useState<WebGLRenderer | null>(null);
+  // const [clock, setClock] = useState<Clock | null>(null);
 
-  const canvas = useRef<HTMLCanvasElement>(null);
-
-  const uniforms = {
-    time: {
-      type: "f",
-      value: 0.0,
+  const config: Config = {
+    isNeedsStopAnimate: false,
+    RAFId: 0,
+    fftRAFId: 0,
+    scene: null,
+    camera: null,
+    renderer: null,
+    uniforms: {
+      time: {
+        type: "f",
+        value: 0.0,
+      },
+      resolution: {
+        type: "v2",
+        value: new Vector2(),
+      },
+      audioTexture: {
+        type: "t",
+        value: null,
+      },
     },
-    resolution: {
-      type: "v2",
-      value: new Vector2(),
-    },
-    audioTexture: {
-      type: "t",
-      value: null as DataTexture | null,
-    },
+    clock: null,
+    audio: null,
   };
 
   const handleResize = () => {
-    setIsNeedsStopAnimate(true);
-    renderer?.setSize(window.innerWidth, window.innerHeight);
-    setIsNeedsStopAnimate(false);
+    config.isNeedsStopAnimate = true;
+    config.renderer?.setSize(window.innerWidth, window.innerHeight);
+    config.isNeedsStopAnimate = false;
   };
 
-  const getSpectrumByFft = ({ analyser, uniforms }: GetSpectrumByFftParams) => {
+  const getSpectrumByFft = (
+    analyser: GetSpectrumByFftParams["analyser"],
+    uniforms: GetSpectrumByFftParams["uniforms"]
+  ) => {
     analyser.getFrequencyData();
     uniforms.audioTexture.value.needsUpdate = true;
-    setFftRAFId(
-      requestAnimationFrame(() => {
-        getSpectrumByFft({ analyser, uniforms });
-      })
-    );
+    config.fftRAFId = requestAnimationFrame(() => {
+      getSpectrumByFft(analyser, uniforms);
+    });
   };
 
   const handleOnClick = () => {
-    if (audio?.isPlaying) {
-      audio.pause();
+    if (config.audio?.isPlaying) {
+      config.audio.pause();
     } else {
       const audioLoader = new AudioLoader();
       if (audioFile !== null) {
         audioLoader.load(audioFile as string, (buffer) => {
-          if (audio !== null) {
-            audio.setBuffer(buffer);
-            console.log(audio);
-            audio.play();
-            const analyser = new AudioAnalyser(audio, fftSize);
-            uniforms.audioTexture.value = new DataTexture(
+          if (config.audio !== null) {
+            config.audio.setBuffer(buffer);
+            config.audio.play();
+            const analyser = new AudioAnalyser(config.audio, fftSize);
+            config.uniforms.audioTexture.value = new DataTexture(
               analyser.data,
               fftSize / 2,
               1,
               LuminanceFormat
             );
-            getSpectrumByFft({ analyser, uniforms });
+            getSpectrumByFft(analyser, config.uniforms);
           }
         });
       }
     }
 
-    if (fftRAFId !== 0) {
-      cancelAnimationFrame(fftRAFId);
+    if (config.fftRAFId !== 0) {
+      cancelAnimationFrame(config.fftRAFId);
     }
   };
 
@@ -133,30 +165,6 @@ const GLSL: React.FC = () => {
   };
 
   useEffect(() => {
-    // three init
-    setScene(new Scene());
-    setCamera(new OrthographicCamera(-1, 1, 1, -1, 1, 1000));
-
-    uniforms.resolution.value = new Vector2(
-      window.innerWidth * window.devicePixelRatio,
-      window.innerHeight * window.devicePixelRatio
-    );
-
-    setClock(new Clock());
-    if (canvas.current != null) {
-      const renderer = new WebGLRenderer({
-        canvas: canvas.current,
-        antialias: false,
-        alpha: false,
-        stencil: false,
-        depth: false,
-      });
-      setRenderer(renderer);
-      onCanvasLoaded();
-    }
-  }, []);
-
-  useEffect(() => {
     file !== null &&
       convertFile().then((result) => {
         setAudioFile(result);
@@ -168,58 +176,75 @@ const GLSL: React.FC = () => {
   }, [audioFile]);
 
   useEffect(() => {
-    if (scene !== null && camera !== null && isExistAudioFile)
-      renderer?.render(scene, camera);
-    animate();
+    if (config.scene !== null && config.camera !== null && isExistAudioFile) {
+      config.renderer?.render(config.scene, config.camera);
+      animate();
+    }
   }, [isExistAudioFile]);
 
   useEffect(() => {
     return () => {
       window.removeEventListener("resize", () => handleResize);
-      cancelAnimationFrame(RAFId);
-      cancelAnimationFrame(fftRAFId);
+      cancelAnimationFrame(config.RAFId);
+      cancelAnimationFrame(config.fftRAFId);
     };
   });
 
-  const onCanvasLoaded = () => {
-    if (!canvas.current) return;
+  const onCanvasLoaded = (canvas: HTMLCanvasElement) => {
+    if (!canvas) return;
 
-    camera?.position.set(0, 0, 100);
-    scene?.position !== undefined && camera?.lookAt(scene?.position);
-    camera !== null && scene?.add(camera);
+    config.scene = new Scene();
+    config.camera = new OrthographicCamera(-1, 1, 1, -1, 1, 1000);
+    config.camera.position.set(0, 0, 100);
+    config.camera.lookAt(config.scene.position);
+    config.scene.add(config.camera);
 
     const geometry = new PlaneBufferGeometry(2, 2);
 
+    config.uniforms.resolution.value = new Vector2(
+      window.innerWidth * window.devicePixelRatio,
+      window.innerHeight * window.devicePixelRatio
+    );
+
     const material = new RawShaderMaterial({
-      uniforms: uniforms,
+      uniforms: config.uniforms,
       vertexShader: vert.default,
       fragmentShader: frag.default,
     });
-
     const mesh = new Mesh(geometry, material);
-    scene?.add(mesh);
+    config.scene.add(mesh);
 
-    clock?.start();
+    config.clock = new Clock();
+    config.clock.start();
 
-    renderer?.setClearColor(0xffffff);
-    renderer?.setPixelRatio(window.devicePixelRatio);
-    renderer?.setSize(window.innerWidth, window.innerHeight);
+    config.renderer = new WebGLRenderer({
+      canvas: canvas,
+      antialias: false,
+      alpha: false,
+      stencil: false,
+      depth: false,
+    });
+    config.renderer.setClearColor(0xffffff);
+    config.renderer.setPixelRatio(window.devicePixelRatio);
+    config.renderer.setSize(window.innerWidth, window.innerHeight);
 
-    renderer !== null && window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize);
 
-    setAudio(new Audio(new AudioListener()));
+    const listener = new AudioListener();
+    config.audio = new Audio(listener);
   };
 
   const animate = () => {
-    setRAFId(requestAnimationFrame(() => animate()));
-    if (isNeedsStopAnimate) return;
-    uniforms.time.value += clock?.getDelta()!!;
-    if (scene !== null && camera !== null) renderer?.render(scene, camera);
+    config.RAFId = requestAnimationFrame(() => animate());
+    if (config.isNeedsStopAnimate) return;
+    config.uniforms.time.value += config.clock?.getDelta()!!;
+    if (config.scene !== null && config.camera !== null)
+      config.renderer?.render(config.scene, config.camera);
   };
 
   return (
     <>
-      <canvas ref={canvas} className="PlayerCanvas" />
+      <canvas ref={onCanvasLoaded} className="PlayerCanvas" />
       <Controller handleOnClick={handleOnClick} file={file} setFile={setFile} />
     </>
   );
