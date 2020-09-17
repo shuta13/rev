@@ -1,7 +1,7 @@
 import React from "react";
 
 export const AppButton: React.FC<{
-  handleOnClick?: () => void;
+  handleOnClick: () => void;
   text: string;
 }> = ({ handleOnClick, text }) => {
   return (

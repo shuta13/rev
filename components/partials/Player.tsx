@@ -1,5 +1,4 @@
-import { resolve } from "path";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Scene,
   OrthographicCamera,
@@ -23,10 +22,10 @@ const frag = require("../../assets/shaders/index.frag");
 
 interface GetSpectrumByFftParams {
   analyser: AudioAnalyser;
-  uniforms: any;
+  uniforms: Config["uniforms"];
 }
 
-export interface Config {
+interface Config {
   isNeedsStopAnimate: boolean;
   RAFId: number;
   fftRAFId: number;
@@ -108,6 +107,7 @@ const GLSL: React.FC = () => {
     uniforms: GetSpectrumByFftParams["uniforms"]
   ) => {
     analyser.getFrequencyData();
+    // @ts-ignore
     uniforms.audioTexture.value.needsUpdate = true;
     config.fftRAFId = requestAnimationFrame(() => {
       getSpectrumByFft(analyser, uniforms);
