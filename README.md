@@ -6,5 +6,5 @@
 
 ### Usage
 
-1. Click File, Choose your file.
-2. Click Play
+1. Choose your file.
+2. Play :woman_dancing:
