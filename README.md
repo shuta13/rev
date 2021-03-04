@@ -12,3 +12,7 @@
 
 1. Choose your audio file(mp3, wav, ma4...) at [here](https://re-v.vercel.app/)
 2. Play :woman_dancing:
+
+### ref
+**shader effect**
+- https://www.shadertoy.com/view/WlB3zc
