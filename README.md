@@ -8,11 +8,26 @@
 
 <img width="1680" alt="スクリーンショット 2021-03-05 1 26 34" src="https://user-images.githubusercontent.com/38882716/109995726-e69ffe00-7d51-11eb-832f-63f1a681ee76.png">
 
-### Usage
+## Usage
 
 1. Choose your audio file(mp3, wav, ma4...) at [here](https://re-v.vercel.app/)
 2. Play :woman_dancing:
 
-### sourced
-**shader effect**
+## sourced
+### shader effect
 - https://www.shadertoy.com/view/WlB3zc
+
+## Award
+
+I made a presentation in Media Project Exercise Ⅱ at Ritsumeikan Univ and got an evaluation.
+
+### Grade Point(A+, A, B, C, F)
+A+
+
+### Materials of the presentation
+
+- [Report(ja)]()
+
+- Architecture
+
+- demo
