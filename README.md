@@ -19,7 +19,7 @@
 
 ## Award
 
-I made a presentation in Media Project Exercise Ⅱ at Ritsumeikan Univ and got an evaluation.
+I made a presentation and got an evaluation in Media Project Exercise Ⅱ at Ritsumeikan Univ.
 
 ### Grade Point(A+, A, B, C, F)
 A+
