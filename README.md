@@ -26,8 +26,9 @@ A+
 
 ### Materials of the presentation
 
-- [Report(ja)]()
+- [Report(ja)](https://github.com/shuta13/rev/blob/master/docs/report-media-project-exec-2.pdf)
 
 - Architecture
 
-- demo
+![architecture of rev](https://github.com/shuta13/rev/blob/master/docs/architecture.png)
+
