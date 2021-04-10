@@ -17,7 +17,7 @@
 ### shader effect
 - https://www.shadertoy.com/view/WlB3zc
 
-## Award
+## Achievement
 
 I made a presentation and got an evaluation in Media Project Exercise Ⅱ at Ritsumeikan Univ.
 
